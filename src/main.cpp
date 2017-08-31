@@ -2,18 +2,36 @@
 //License: QuantifiedAG Software License.  See LICENSE.txt for full license.
 
 /*
- *   main.cpp
- *   \brief HPC implementation of simple neural network model
+ *   \file example.cpp
+ *   \brief A Documented file.
  *
- *  p(c=1|x) = sigma( x*w )
- * 
+ *  Detailed description
+ *
  */
 #include <iostream>
 #include "mkl.h"
 #include "ioFunctions.hpp"
 #include "parameters.hpp"
+#include "initializations.hpp"
 
 using namespace std;
+
+//feedforward functions:
+void augmentInput( const double *x, const int idx, double *xPrime ){
+      xPrime[0] = 1.0;
+      xPrime[DIMENSIONS] = x[idx];
+}
+
+void computeActivations( const double *xPrime, const double *W, double *a){
+      //1. get activations: a_j = \sum_i^D{w_ji * x_i + w_j0}
+      // perform matrix vector multiplication: a = W*x
+      cout << "Computing 1st Layer Activations" << "\n";
+      const double alpha = 1.0;
+      const double beta = 0.0;
+      const int incx = 1;
+      cblas_dgemv( CblasRowMajor, CblasNoTrans, NUM_HIDDEN_NODES, (DIMENSIONS + 1),
+		   alpha, W, (DIMENSIONS + 1), xPrime, incx, beta, a, incx);
+}
 
 int main(int argc, char *argv[])
 {
@@ -21,61 +39,80 @@ int main(int argc, char *argv[])
 
       //--------------------------------------------------------------------------------
       // declare variables for calculations
-      double *x1, *x2, *t, *X; //data
-      double *weights, *y, *designMatrix, *R; //logistic regression parameters
+      double *x, *t, *y, *X, *W, *V, *a, *z;
 
-      x1 = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 );
-      x2 = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 );
-      t = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 );
-      X = (double *)mkl_malloc( NUM_PATTERNS*(ORDER - 1)*sizeof( double ), 64 );
-      
-      weights = (double *)mkl_malloc( ORDER*sizeof( double ), 64 );
-      y = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 );
-      designMatrix = (double *)mkl_malloc( NUM_PATTERNS*ORDER*sizeof( double ), 64 );
-      R = (double *)mkl_malloc( NUM_PATTERNS*NUM_PATTERNS*sizeof( double ), 64 );
-      
-      memset( x1, 0.0,  NUM_PATTERNS * sizeof(double));
-      memset( x2, 0.0,  NUM_PATTERNS * sizeof(double));
+      x = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // inputs
+      t = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // targets
+      y = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // outputs
+      X = (double *)mkl_malloc( NUM_PATTERNS*(DIMENSIONS + 1)*sizeof( double ), 64 ); //data matrix
+      W = (double *)mkl_malloc( NUM_HIDDEN_NODES * (DIMENSIONS + 1)*sizeof( double ), 64 ); //1st layer weights
+      V = (double *)mkl_malloc( NUM_OUTPUTS*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //2nd layer weights
+      a = (double *)mkl_malloc( NUM_HIDDEN_NODES*sizeof( double ), 64 ); // activations
+      z = (double *)mkl_malloc( NUM_HIDDEN_NODES*sizeof( double ), 64 ); // hidden nodes
+
+      memset( x, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( t, 0.0,  NUM_PATTERNS * sizeof(double));
-      memset( X, 0.0,  NUM_PATTERNS *(ORDER - 1)* sizeof(double));
-
-      memset( weights, 0.0,  ORDER * sizeof(double));
       memset( y, 0.0,  NUM_PATTERNS * sizeof(double));
-      memset( designMatrix, 0.0,  NUM_PATTERNS * ORDER* sizeof(double));
-      memset( R, 0.0,  NUM_PATTERNS *NUM_PATTERNS* sizeof(double));
+      memset( X, 0.0,  NUM_PATTERNS *(DIMENSIONS + 1)* sizeof(double));
+      memset( W, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
+      memset( V, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
+      memset( a, 0.0,  NUM_HIDDEN_NODES * sizeof(double));
+      memset( z, 0.0,  NUM_HIDDEN_NODES * sizeof(double));
+
       //--------------------------------------------------------------------------------
       //read data
-      string x1File = "./data/train/x1.txt";
-      string x2File = "./data/train/x2.txt";
-      string targetsFile = "./data/train/class.txt";
+      string inputsFile = "./data/xSquared/inputs.txt";
+      string targetsFile = "./data/xSquared/targets.txt";
 
-      loadData( x1 , x1File );
-      loadData( x2 , x2File );
+      loadData( x , inputsFile );
       loadData( t , targetsFile );
       
-      cout << "First 10 Features" << endl;
-      cout << "x1\t | \tx2" << endl;
-      printFeatures( x1, x2, 5 );
-      
-      //cout << "\nFirst 10 Targets" << endl;
-      //printVector( t, 10 );
-      //--------------------------------------------------------------------------------
-      //1. Randomly initialize weights.( srandnull() ) for true randomization
-      //setRandomWeights( weights );
-      //cout << "\nInitial Weights" << endl;
-      //printVector( weights, ORDER );
-      //--------------------------------------------------------------------------------
+      cout << "Inputs" << endl;
+      printVector( x, 10 );
 
+      cout << "Targets" << endl;
+      printVector( t, 10 );
+      //--------------------------------------------------------------------------------
+      //2. each input pattern must have a x0 clamped at 1.0 for the bias
+      double *xPrime = (double *)mkl_malloc( (DIMENSIONS + 1)*sizeof( double ), 64 ); // inputs
+      //for (int i = 0; i < NUM_PATTERNS; ++i) {
+      for (int i = 0; i < 1; ++i) {
+	    memset( xPrime, 0.0, (DIMENSIONS + 1)* sizeof(double));
+	    augmentInput( x, i, xPrime );
+	    //cout << "Xprime is " << xPrime[0] << "\t" <<xPrime[1] << endl;
+      }
+      cout << "Xprime is " << xPrime[0] << "\t" <<xPrime[1] << endl;
+      //computeDataMatrix( x, X );
+      //cout << "\nData matrix" << endl;
+      //printMatrix( X, NUM_PATTERNS, 2 );
+      //--------------------------------------------------------------------------------
+      //3. Randomly initialize weights
+      setRandomWeights( W,  NUM_HIDDEN_NODES, (DIMENSIONS+1) );
+      setRandomWeights( V, NUM_OUTPUTS, NUM_HIDDEN_NODES );
+      cout << "\nFirst layer weights" << endl;
+      printMatrix( W,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
+
+      cout << "\nSecond layer weights" << endl;
+      printMatrix( V, NUM_OUTPUTS, NUM_HIDDEN_NODES );
+      //--------------------------------------------------------------------------------
+      //4. compute activations:
+      computeActivations( xPrime, W, a);
+      cout << "\n\nActivations : " << endl;
+      printVector( a, NUM_HIDDEN_NODES );
+      //--------------------------------------------------------------------------------
+      //--------------------------------------------------------------------------------
+      //--------------------------------------------------------------------------------
+      //--------------------------------------------------------------------------------
 
       printf ("\n Deallocating memory \n\n");
-      mkl_free( x1 );
-      mkl_free( x2 );
+      mkl_free( x );
       mkl_free( t );
-      mkl_free( weights );
       mkl_free( y );
-      mkl_free( designMatrix );
-      mkl_free( R );
       mkl_free( X );
+      mkl_free( W );
+      mkl_free( V );
+      mkl_free( a );
+      mkl_free( z );
       printf (" Example completed. \n\n");
 
       return 0;

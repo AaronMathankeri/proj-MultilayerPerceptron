@@ -1,0 +1,24 @@
+/**
+ *   \file initializations.hpp
+ *   \brief A Documented file.
+ *
+ *  Helper functions needed before 
+ *  network inference
+ */
+
+#ifndef INITIALIZATIONS_H
+#define INITIALIZATIONS_H
+
+#include <iostream>
+
+using namespace std;
+
+//-----------------------------------------------------
+//initialize to avoid memory errors
+void initializeMatrix( double * Matrix, int rows, int columns );
+double fRand(double fMin, double fMax);
+void setRandomWeights( double * weights, int nRows, int nCols );
+
+void computeDataMatrix( const double *x, double *X );
+
+#endif /* INITIALIZATIONS_H */
