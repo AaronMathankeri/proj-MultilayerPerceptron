@@ -34,5 +34,5 @@ p <- ggplot(df, aes(x = inputs, y = targets)) +
 #                      labels = c("M=1", "M=3"))
 # =============================================================================
 # write to file
-write(inputs, file = "../data/xSquared/inputs.txt", ncolumns = 1)
-write(targets, file = "../data/xSquared/targets.txt", ncolumns = 1)
+write(inputs, file = "xSquared/inputs.txt", ncolumns = 1)
+write(targets, file = "xSquared/targets.txt", ncolumns = 1)
