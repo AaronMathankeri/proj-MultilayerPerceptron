@@ -13,25 +13,9 @@
 #include "ioFunctions.hpp"
 #include "parameters.hpp"
 #include "initializations.hpp"
+#include "feedForwardFunctions.hpp"
 
 using namespace std;
-
-//feedforward functions:
-void augmentInput( const double *x, const int idx, double *xPrime ){
-      xPrime[0] = 1.0;
-      xPrime[DIMENSIONS] = x[idx];
-}
-
-void computeActivations( const double *xPrime, const double *W, double *a){
-      //1. get activations: a_j = \sum_i^D{w_ji * x_i + w_j0}
-      // perform matrix vector multiplication: a = W*x
-      cout << "Computing 1st Layer Activations" << "\n";
-      const double alpha = 1.0;
-      const double beta = 0.0;
-      const int incx = 1;
-      cblas_dgemv( CblasRowMajor, CblasNoTrans, NUM_HIDDEN_NODES, (DIMENSIONS + 1),
-		   alpha, W, (DIMENSIONS + 1), xPrime, incx, beta, a, incx);
-}
 
 int main(int argc, char *argv[])
 {
@@ -43,7 +27,7 @@ int main(int argc, char *argv[])
 
       x = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // inputs
       t = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // targets
-      y = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // outputs
+      y = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // outputs
       X = (double *)mkl_malloc( NUM_PATTERNS*(DIMENSIONS + 1)*sizeof( double ), 64 ); //data matrix
       W = (double *)mkl_malloc( NUM_HIDDEN_NODES * (DIMENSIONS + 1)*sizeof( double ), 64 ); //1st layer weights
       V = (double *)mkl_malloc( NUM_OUTPUTS*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //2nd layer weights
@@ -52,7 +36,7 @@ int main(int argc, char *argv[])
 
       memset( x, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( t, 0.0,  NUM_PATTERNS * sizeof(double));
-      memset( y, 0.0,  NUM_PATTERNS * sizeof(double));
+      memset( y, 0.0,  NUM_OUTPUTS * sizeof(double));
       memset( X, 0.0,  NUM_PATTERNS *(DIMENSIONS + 1)* sizeof(double));
       memset( W, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
       memset( V, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
@@ -95,12 +79,21 @@ int main(int argc, char *argv[])
       cout << "\nSecond layer weights" << endl;
       printMatrix( V, NUM_OUTPUTS, NUM_HIDDEN_NODES );
       //--------------------------------------------------------------------------------
+      //FEEDFORWARD FUNCTIONS!!!!
       //4. compute activations:
       computeActivations( xPrime, W, a);
       cout << "\n\nActivations : " << endl;
       printVector( a, NUM_HIDDEN_NODES );
       //--------------------------------------------------------------------------------
+      //5. compute hidden nodes
+      computeHiddenUnits( a, z);
+      cout << "\n\nHidden Nodes : " << endl;
+      printVector( z, NUM_HIDDEN_NODES );
       //--------------------------------------------------------------------------------
+      //6. compute output
+      computeOutputActivations( z , V, y );
+      cout << "\n\nOutput is  : " << endl;
+      printVector( y, NUM_OUTPUTS );
       //--------------------------------------------------------------------------------
       //--------------------------------------------------------------------------------
 

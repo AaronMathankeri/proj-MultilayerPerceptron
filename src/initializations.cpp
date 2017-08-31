@@ -33,3 +33,8 @@ void setRandomWeights( double * weights, int nRows, int nCols ){
 	    weights[i] = temp;
       }
 }
+
+void augmentInput( const double *x, const int idx, double *xPrime ){
+      xPrime[0] = 1.0;
+      xPrime[DIMENSIONS] = x[idx];
+}

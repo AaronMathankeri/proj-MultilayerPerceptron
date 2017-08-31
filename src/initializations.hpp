@@ -17,6 +17,7 @@ using namespace std;
 
 //-----------------------------------------------------
 //initialize to avoid memory errors
+void augmentInput( const double *x, const int idx, double *xPrime );
 void computeDataMatrix( const double *x, double *X );
 
 void initializeMatrix( double * Matrix, int rows, int columns );
