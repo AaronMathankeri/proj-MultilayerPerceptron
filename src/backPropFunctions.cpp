@@ -1,7 +1,7 @@
 #include "backPropFunctions.hpp"
 
-void computeOutputErrors( const double *y, const double *t, double *outputErrors){
-      vdSub( NUM_OUTPUTS, y, &t[0], outputErrors);
+void computeOutputErrors( const double *y, const double *t, const int idx, double *outputErrors){
+      vdSub( NUM_OUTPUTS, y, &t[idx], outputErrors);
 }
 
 

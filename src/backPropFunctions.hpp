@@ -13,7 +13,7 @@
 #include "parameters.hpp"
 #include "helperFunctions.hpp"
 
-void computeOutputErrors( const double *y, const double *t, double *outputErrors);
+void computeOutputErrors( const double *y, const double *t, const int idx, double *outputErrors);
 void computeHiddenErrors( const double *a, const double *V, const double *outputErrors, double *inputErrors );
 
 void computeGradV( const double *outputErrors, const double *z, double *gradV );
