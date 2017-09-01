@@ -13,9 +13,9 @@ void computeActivations( const double *xPrime, const double *W, double *a){
 }
 //---------------------------------------------------------------------------------
 void computeHiddenUnits( const double *a, double* z){
-
+      z[0] = 1.0;
       for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
-	    z[j] = logisticSigmoid( a[j] );
+	    z[j+1] = logisticSigmoid( a[j] );
       }
 }
 //---------------------------------------------------------------------------------
@@ -24,8 +24,8 @@ void computeOutputActivations( const double *z, const double *V, double *y){
       const double alpha = 1.0;
       const double beta = 0.0;
       const int incx = 1;
-      cblas_dgemv( CblasRowMajor, CblasNoTrans, NUM_OUTPUTS, NUM_HIDDEN_NODES,
-		   alpha, V, NUM_HIDDEN_NODES, z, incx, beta, y, incx);
+      cblas_dgemv( CblasRowMajor, CblasNoTrans, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1),
+		   alpha, V, (NUM_HIDDEN_NODES+1), z, incx, beta, y, incx);
 }
 //---------------------------------------------------------------------------------
 
