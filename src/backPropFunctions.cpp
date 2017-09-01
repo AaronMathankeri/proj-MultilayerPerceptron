@@ -19,3 +19,21 @@ void computeHiddenErrors( const double *a, const double *V, const double *output
       }
 
 }
+
+void computeGradV( const double *outputErrors, const double *z, double *gradV ){
+      //dE/dV = dk * z
+      for (int k = 0; k < NUM_OUTPUTS; ++k) {
+	    for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
+		  gradV[k*NUM_HIDDEN_NODES + j] = outputErrors[k] * z[j]; 		  
+	    }
+      }
+
+}
+
+void computeGradW( const double *inputErrors, const double *x, double *gradW ){
+      for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
+	    for (int i = 0; i < (DIMENSIONS+1); ++i) {
+		  gradW[j*(DIMENSIONS+1) + i] = inputErrors[j] * x[i]; 		  
+	    }
+      }
+}

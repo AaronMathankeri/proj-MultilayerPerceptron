@@ -18,22 +18,19 @@
 
 using namespace std;
 
-void computeGradV( const double *outputErrors, const double *z, double *gradV ){
-      //dE/dV = dk * z
-      for (int k = 0; k < NUM_OUTPUTS; ++k) {
-	    for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
-		  gradV[k*NUM_HIDDEN_NODES + j] = outputErrors[k] * z[j]; 		  
-	    }
-      }
 
+void applyLearningRate( double *x, const int nElements, const double learningRate ){
+      const int incx = 1;
+      double *y = (double *)mkl_malloc( nElements*sizeof( double ), 64 ); // inputs
+      memset( y, 0.0,  nElements * sizeof(double));
+      cblas_daxpy( nElements, learningRate, x, incx, y, incx );
+      cblas_dcopy( nElements, y, incx, x, incx );
+      
+      mkl_free( y );
 }
 
-void computeGradW( const double *inputErrors, const double *x, double *gradW ){
-      for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
-	    for (int i = 0; i < (DIMENSIONS+1); ++i) {
-		  gradW[j*(DIMENSIONS+1) + i] = inputErrors[j] * x[i]; 		  
-	    }
-      }
+void updateWeights( double *weights, const double *deltaWeights, const int nElements ){
+      vdSub( nElements, weights, deltaWeights, weights);
 }
 
 
@@ -154,9 +151,24 @@ int main(int argc, char *argv[])
       //2. multiply by learning rate
       //3. subtract current weights
       cout << "\n\nSTOCHASTIC GRADIENT DESCENT " << endl;
-      const double learningRate = 1e-5;
+      const double learningRate = 1e-4;
       //--------------------------------------------------------------------------------
+      //multiply weights by learningrate
+      applyLearningRate( gradV, (NUM_OUTPUTS*NUM_HIDDEN_NODES), learningRate );
+      applyLearningRate( gradW, (NUM_HIDDEN_NODES*(DIMENSIONS+1)), learningRate );
+      cout << "\n\n GradV   : " << endl;
+      printMatrix( gradV, NUM_OUTPUTS ,NUM_HIDDEN_NODES );
+      cout << "\n\n GradW  : " << endl;
+      printMatrix( gradW, NUM_HIDDEN_NODES, (DIMENSIONS+1) );
       //--------------------------------------------------------------------------------
+      updateWeights( W, gradW, (NUM_HIDDEN_NODES*(DIMENSIONS+1)));
+      updateWeights( V, gradV, (NUM_OUTPUTS*NUM_HIDDEN_NODES) );
+      cout << "NEW Weights are.." << endl;
+      cout << "\nFirst layer weights" << endl;
+      printMatrix( W,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
+
+      cout << "\nSecond layer weights" << endl;
+      printMatrix( V, NUM_OUTPUTS, NUM_HIDDEN_NODES );
       //--------------------------------------------------------------------------------
 
       printf ("\n Deallocating memory \n\n");
