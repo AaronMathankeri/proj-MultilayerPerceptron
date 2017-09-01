@@ -12,7 +12,8 @@
 
 #include "parameters.hpp"
 #include <math.h>
-double logisticSigmoid( const double a );
 
+double logisticSigmoid( const double a );
+double dSigmoid( const double a );
 
 #endif /* HELPERFUNCTIONS_H */

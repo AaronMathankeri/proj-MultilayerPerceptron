@@ -14,36 +14,28 @@
 #include "parameters.hpp"
 #include "initializations.hpp"
 #include "feedForwardFunctions.hpp"
+#include "backPropFunctions.hpp"
 
 using namespace std;
 
-void computeOutputErrors( const double *y, const double *t, double *outputErrors){
-      vdSub( NUM_OUTPUTS, y, &t[0], outputErrors);
-}
-
-double dSigmoid( const double a ){
-      double x = 0.00;
-      x = logisticSigmoid(a) * ( 1 - logisticSigmoid (a ) );
-      cout << "derivative is " << x << endl;
-      return x;
-}
-void computeHiddenErrors( const double *a, const double *V, const double *outputErrors, double *inputErrors ){
-      //1. get activations: d_j = h'(a)*\sum_k^D{v_kj * dk }
-      const double alpha = 1.0;
-      const double beta = 0.0;
-      const int incx = 1;
-      cblas_dgemv( CblasRowMajor, CblasTrans, NUM_OUTPUTS, NUM_HIDDEN_NODES,
-		   alpha, V, NUM_HIDDEN_NODES, outputErrors, incx, beta, inputErrors, incx);
-
-      cout << "\n\nInput Errors are  : " << endl;
-      printVector( inputErrors, NUM_HIDDEN_NODES );
-
-      //inputErrors * h'(aj)
-      for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
-	    inputErrors[j] *= dSigmoid( a[j] );
+void computeGradV( const double *outputErrors, const double *z, double *gradV ){
+      //dE/dV = dk * z
+      for (int k = 0; k < NUM_OUTPUTS; ++k) {
+	    for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
+		  gradV[k*NUM_HIDDEN_NODES + j] = outputErrors[k] * z[j]; 		  
+	    }
       }
 
 }
+
+void computeGradW( const double *inputErrors, const double *x, double *gradW ){
+      for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
+	    for (int i = 0; i < (DIMENSIONS+1); ++i) {
+		  gradW[j*(DIMENSIONS+1) + i] = inputErrors[j] * x[i]; 		  
+	    }
+      }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -53,6 +45,7 @@ int main(int argc, char *argv[])
       // declare variables for calculations
       double *x, *t, *y, *X, *W, *V, *a, *z;
       double *outputErrors, *inputErrors;
+      double *gradW, *gradV;
 
       x = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // inputs
       t = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // targets
@@ -66,6 +59,9 @@ int main(int argc, char *argv[])
       outputErrors = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // activations
       inputErrors = (double *)mkl_malloc( NUM_HIDDEN_NODES*sizeof( double ), 64 ); // hidden nodes
 
+      gradW = (double *)mkl_malloc( NUM_HIDDEN_NODES * (DIMENSIONS + 1)*sizeof( double ), 64 ); //1st layer weights
+      gradV = (double *)mkl_malloc( NUM_OUTPUTS*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //2nd layer weights
+      
       memset( x, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( t, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( y, 0.0,  NUM_OUTPUTS * sizeof(double));
@@ -77,6 +73,8 @@ int main(int argc, char *argv[])
 
       memset( outputErrors, 0.0,  NUM_OUTPUTS * sizeof(double));
       memset( inputErrors, 0.0,  NUM_HIDDEN_NODES * sizeof(double));
+      memset( gradW, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
+      memset( gradV, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
       //--------------------------------------------------------------------------------
       //read data
       string inputsFile = "./data/xSquared/inputs.txt";
@@ -144,6 +142,19 @@ int main(int argc, char *argv[])
       cout << "\n\nInput Errors are  : " << endl;
       printVector( inputErrors, NUM_HIDDEN_NODES );
       //--------------------------------------------------------------------------------
+      computeGradV( outputErrors, z , gradV );
+      computeGradW( inputErrors, x, gradW );
+      cout << "\n\n GradV   : " << endl;
+      printMatrix( gradV, NUM_OUTPUTS ,NUM_HIDDEN_NODES );
+      cout << "\n\n GradW  : " << endl;
+      printMatrix( gradW, NUM_HIDDEN_NODES, (DIMENSIONS+1) );
+      //--------------------------------------------------------------------------------
+      // STOCHASTIC GRADIENT DESCENT
+      //1. get gradient
+      //2. multiply by learning rate
+      //3. subtract current weights
+      cout << "\n\nSTOCHASTIC GRADIENT DESCENT " << endl;
+      const double learningRate = 1e-5;
       //--------------------------------------------------------------------------------
       //--------------------------------------------------------------------------------
       //--------------------------------------------------------------------------------
