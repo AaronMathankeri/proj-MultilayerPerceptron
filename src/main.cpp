@@ -46,8 +46,9 @@ int main(int argc, char *argv[])
 
       double *X, *T; // inputs and targets
       double *x, *t, *y, *W, *V, *a, *z;
-      //double *outputErrors, *inputErrors;
-      //double *gradW, *gradV;
+
+      double *outputErrors, *inputErrors;
+      double *gradW, *gradV;
 
       X = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // inputs
       T = (double *)mkl_malloc( NUM_PATTERNS*sizeof( double ), 64 ); // targets
@@ -62,11 +63,11 @@ int main(int argc, char *argv[])
       a = (double *)mkl_malloc( (NUM_HIDDEN_NODES)*sizeof( double ), 64 ); // activations 
       z = (double *)mkl_malloc( (NUM_HIDDEN_NODES + 1)*sizeof( double ), 64 ); // hidden nodes including bias
       
-      //outputErrors = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // activations
-      //inputErrors = (double *)mkl_malloc( NUM_HIDDEN_NODES*sizeof( double ), 64 ); // hidden nodes
+      outputErrors = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // 
+      inputErrors = (double *)mkl_malloc( (NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); // including bias
 
-      //gradW = (double *)mkl_malloc( NUM_HIDDEN_NODES * (DIMENSIONS + 1)*sizeof( double ), 64 ); //1st layer weights
-      //gradV = (double *)mkl_malloc( NUM_OUTPUTS*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //2nd layer weights
+      gradW = (double *)mkl_malloc( (DIMENSIONS + 1)*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //1st layer weights
+      gradV = (double *)mkl_malloc( NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); //2nd layer weights
       
       memset( X, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( T, 0.0,  NUM_PATTERNS * sizeof(double));
@@ -81,10 +82,8 @@ int main(int argc, char *argv[])
       memset( a, 0.0,  (NUM_HIDDEN_NODES) * sizeof(double));
       memset( z, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
 
-      //memset( outputErrors, 0.0,  NUM_OUTPUTS * sizeof(double));
-      //memset( inputErrors, 0.0,  NUM_HIDDEN_NODES * sizeof(double));
-      //memset( gradW, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
-      //memset( gradV, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
+      memset( gradW, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
+      memset( gradV, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
       //--------------------------------------------------------------------------------
       //read data
       string inputsFile = "./data/xSquared/inputs.txt";
@@ -116,9 +115,13 @@ int main(int argc, char *argv[])
 
       for (int i = 0; i < 1; ++i) {
 	    augmentInput( X, i, x );
+	    t[0] = T[i];
 	    //cout << "x is " << x[0] << "\t" << x[1] << endl;
-	    cout << "x is " << "\n";
+	    cout << "\nx is " << "\n";
 	    printVector( x , DIMENSIONS+1);
+	    cout << "t is " << "\n";
+	    printVector( t , NUM_OUTPUTS);
+
       }
 
       //--------------------------------------------------------------------------------
@@ -131,42 +134,41 @@ int main(int argc, char *argv[])
       //A. compute activations:
       cout << "\nComputing activations" << endl;
       computeActivations( x, W, a);
-      cout << "\nActivations : " << endl;
+      cout << "Activations : " << endl;
       printVector( a, NUM_HIDDEN_NODES );
 
       //--------------------------------------------------------------------------------
       //B. compute hidden nodes
-      cout << "Computing hidden nodes" << endl;
+      cout << "\nComputing hidden nodes" << endl;
       computeHiddenUnits( a, z);
-      cout << "\n\nHidden Nodes : " << endl;
+      cout << "Hidden Nodes : " << endl;
       printVector( z, NUM_HIDDEN_NODES+1 );
 
       //--------------------------------------------------------------------------------
       //C. compute output
-      cout << "Computing outputs" << endl;
+      cout << "\nComputing outputs" << endl;
       computeOutputActivations( z , V, y );
-      cout << "\n\nOutput is  : " << endl;
+      cout << "Output is  : " << endl;
       printVector( y, NUM_OUTPUTS );
       //--------------------------------------------------------------------------------
-
-      /*
-
       // ERROR BACKPROPAGATION
       memset( outputErrors, 0.0,  NUM_OUTPUTS * sizeof(double));
-      memset( inputErrors, 0.0,  NUM_HIDDEN_NODES * sizeof(double));
-      memset( gradW, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
-      memset( gradV, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
-      cout <<"\nRunning backprop..." << endl;
-      //1. computeOutputErrors
-      //cout << "\n\nBACKPROPAGATE THROUGH NETWORK " << endl;
-      computeOutputErrors( y, t, 0, outputErrors );
-      //cout << "\n\nOutput Errors are  : " << endl;
-      //printVector( outputErrors, NUM_OUTPUTS );
+      memset( inputErrors, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
+
+      cout << "\n\nBACKPROPAGATE THROUGH NETWORK " << endl;
+      //A. computeOutputErrors
+      cout << "\nComputing output errors" << endl;
+      computeOutputErrors( y, t, outputErrors );
+      cout << "Output Errors are  : " << endl;
+      printVector( outputErrors, NUM_OUTPUTS );
       //--------------------------------------------------------------------------------
+      //B. computeInput errors
+      cout << "\nComputing input errors" << endl;
       computeHiddenErrors( a, V, outputErrors, inputErrors );
-      //cout << "\n\nInput Errors are  : " << endl;
-      //printVector( inputErrors, NUM_HIDDEN_NODES );
+      cout << "Input Errors are  : " << endl;
+      printVector( inputErrors, NUM_HIDDEN_NODES+1 );
       //--------------------------------------------------------------------------------
+      /*
       computeGradV( outputErrors, z , gradV );
       computeGradW( inputErrors, x, gradW );
       cout << "complete." << endl;

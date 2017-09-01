@@ -1,23 +1,29 @@
 #include "backPropFunctions.hpp"
 
-void computeOutputErrors( const double *y, const double *t, const int idx, double *outputErrors){
-      vdSub( NUM_OUTPUTS, y, &t[idx], outputErrors);
+void computeOutputErrors( const double *y, const double *t, double *outputErrors){
+      vdSub( NUM_OUTPUTS, y, t, outputErrors);
 }
 
 
 void computeHiddenErrors( const double *a, const double *V, const double *outputErrors, double *inputErrors ){
       //1. get activations: d_j = h'(a)*\sum_k^D{v_kj * dk }
+      /*
       const double alpha = 1.0;
       const double beta = 0.0;
       const int incx = 1;
-      cblas_dgemv( CblasRowMajor, CblasTrans, NUM_OUTPUTS, NUM_HIDDEN_NODES,
-		   alpha, V, NUM_HIDDEN_NODES, outputErrors, incx, beta, inputErrors, incx);
+      cblas_dgemv( CblasRowMajor, CblasTrans, NUM_OUTPUTS, NUM_HIDDEN_NODES+1,
+		   alpha, V, NUM_HIDDEN_NODES+1, outputErrors, incx, beta, inputErrors, incx);
+      */
+      for (int k = 0; k < NUM_OUTPUTS; ++k) {
+	    for (int j = 0; j < NUM_HIDDEN_NODES+1; ++j) {
+		  inputErrors[j] += V[k*(NUM_HIDDEN_NODES+1) + j] * outputErrors[k];
+	    }
+      }
 
       //inputErrors * h'(aj)
       for (int j = 0; j < NUM_HIDDEN_NODES; ++j) {
 	    inputErrors[j] *= dSigmoid( a[j] );
       }
-
 }
 
 void computeGradV( const double *outputErrors, const double *z, double *gradV ){
