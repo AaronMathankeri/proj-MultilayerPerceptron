@@ -2,11 +2,14 @@
 //License: QuantifiedAG Software License.  See LICENSE.txt for full license.
 
 /*
- *   \file example.cpp
- *   \brief A Documented file.
+ *   \file main.cpp
+ *   \brief Main source file
  *
- *  NOTE: x0 & z0 are clamped at 1.0 for the biases!
- *        therefore for 3hidden nodes, there are 4
+ *  NOTE: - x0 & z0 are clamped at 1.0 for the biases!
+ *          therefore for 3hidden nodes, there are 4
+ *        - for error backprop and feedforward, how
+ *          to apply the matrix multiplications
+ *          to handle the bias parms?
  */
 #include <iostream>
 #include "mkl.h"
