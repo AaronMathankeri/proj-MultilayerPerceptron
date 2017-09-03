@@ -65,13 +65,13 @@ int main(int argc, char *argv[])
 
       a = (double *)mkl_malloc( (NUM_HIDDEN_NODES)*sizeof( double ), 64 ); // activations 
       z = (double *)mkl_malloc( (NUM_HIDDEN_NODES + 1)*sizeof( double ), 64 ); // hidden nodes including bias
-      /*
-      outputErrors = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // 
-      inputErrors = (double *)mkl_malloc( (NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); // including bias
 
-      gradW = (double *)mkl_malloc( (DIMENSIONS + 1)*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //1st layer weights
-      gradV = (double *)mkl_malloc( NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); //2nd layer weights
-      */
+      outputErrors = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // 
+      inputErrors = (double *)mkl_malloc( NUM_HIDDEN_NODES*sizeof( double ), 64 ); // including bias
+
+      gradV = (double *)mkl_malloc( NUM_HIDDEN_NODES*(DIMENSIONS+1)*sizeof( double ), 64 ); //1st layer weights
+      gradW = (double *)mkl_malloc( NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); //2nd layer weights
+
       memset( X, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( T, 0.0,  NUM_PATTERNS * sizeof(double));
 
@@ -84,10 +84,13 @@ int main(int argc, char *argv[])
 
       memset( a, 0.0,  (NUM_HIDDEN_NODES) * sizeof(double));
       memset( z, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
-      /*
-      memset( gradW, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
-      memset( gradV, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
-      */
+
+      memset( outputErrors, 0.0,  (NUM_OUTPUTS) * sizeof(double));
+      memset( inputErrors, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
+
+      memset( gradV, 0.0,  NUM_HIDDEN_NODES *(DIMENSIONS+1) * sizeof(double));
+      memset( gradW, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
+
       //--------------------------------------------------------------------------------
       //read data
       string inputsFile = "./data/xSquared/inputs.txt";
@@ -139,7 +142,6 @@ int main(int argc, char *argv[])
       computeActivations( x, V, a);
       cout << "Activations : " << endl;
       printVector( a, NUM_HIDDEN_NODES );
-
       //--------------------------------------------------------------------------------
       //B. compute hidden nodes
       cout << "\nComputing hidden nodes" << endl;
@@ -153,9 +155,8 @@ int main(int argc, char *argv[])
       cout << "Output is  : " << endl;
       printVector( y, NUM_OUTPUTS );
       //--------------------------------------------------------------------------------
-      /*
       // ERROR BACKPROPAGATION
-      memset( outputErrors, 0.0,  NUM_OUTPUTS * sizeof(double));
+      memset( outputErrors, 0.0,  (NUM_OUTPUTS) * sizeof(double));
       memset( inputErrors, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
 
       cout << "\n\nBACKPROPAGATE THROUGH NETWORK " << endl;
@@ -164,93 +165,90 @@ int main(int argc, char *argv[])
       computeOutputErrors( y, t, outputErrors );
       cout << "Output Errors are  : " << endl;
       printVector( outputErrors, NUM_OUTPUTS );
+
       //--------------------------------------------------------------------------------
       //B. computeInput errors
       cout << "\nComputing input errors" << endl;
-      computeHiddenErrors( a, V, outputErrors, inputErrors );
+      computeHiddenErrors( a, W, outputErrors, inputErrors );
       cout << "Input Errors are  : " << endl;
-      printVector( inputErrors, NUM_HIDDEN_NODES+1 );
+      printVector( inputErrors, NUM_HIDDEN_NODES );
       //--------------------------------------------------------------------------------
-      /*
-      computeGradV( outputErrors, z , gradV );
-      computeGradW( inputErrors, x, gradW );
+      memset( gradV, 0.0,  NUM_HIDDEN_NODES *(DIMENSIONS+1) * sizeof(double));
+      memset( gradW, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
+
+      computeGradW( outputErrors, z , gradW );
+      computeGradV( inputErrors, x, gradV );
       cout << "complete." << endl;
-      /*
-	cout << "\n\n GradV   : " << endl;
-	printMatrix( gradV, NUM_OUTPUTS ,NUM_HIDDEN_NODES );
-	cout << "\n\n GradW  : " << endl;
-	printMatrix( gradW, NUM_HIDDEN_NODES, (DIMENSIONS+1) );
-      */
+
+      cout << "\n\n GradW  : " << endl;
+      printMatrix( gradW, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
+      cout << "\n\n GradV   : " << endl;
+      printMatrix( gradV, NUM_HIDDEN_NODES , (DIMENSIONS+1) );
       //--------------------------------------------------------------------------------
       // STOCHASTIC GRADIENT DESCENT
       //1. get gradient
       //2. multiply by learning rate
       //3. subtract current weights
       //cout << "\n\nSTOCHASTIC GRADIENT DESCENT " << endl;
-      /*
+
       //--------------------------------------------------------------------------------
       cout << "Updating weights using SGD" << endl;
       //multiply weights by learningrate
-      applyLearningRate( gradV, (NUM_OUTPUTS*NUM_HIDDEN_NODES), learningRate );
-      applyLearningRate( gradW, (NUM_HIDDEN_NODES*(DIMENSIONS+1)), learningRate );
-      /*
-	cout << "\n\n GradV   : " << endl;
-	printMatrix( gradV, NUM_OUTPUTS ,NUM_HIDDEN_NODES );
-	cout << "\n\n GradW  : " << endl;
-	printMatrix( gradW, NUM_HIDDEN_NODES, (DIMENSIONS+1) );
-      */
-      /*
+      applyLearningRate( gradW, (NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)), learningRate );
+      applyLearningRate( gradV, (NUM_HIDDEN_NODES*(DIMENSIONS+1)), learningRate );
+
+      cout << "\n\n GradW   : " << endl;
+      printMatrix( gradW, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
+      cout << "\n\n GradV  : " << endl;
+      printMatrix( gradV, NUM_HIDDEN_NODES, (DIMENSIONS+1) );
+
+
       //--------------------------------------------------------------------------------
-      updateWeights( W, gradW, (NUM_HIDDEN_NODES*(DIMENSIONS+1)));
-      updateWeights( V, gradV, (NUM_OUTPUTS*NUM_HIDDEN_NODES) );
+      updateWeights( W, gradW, (NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)) );
+      updateWeights( V, gradV, (NUM_HIDDEN_NODES*(DIMENSIONS+1)));
       cout << "complete." << endl;
-      /*
-	cout << "NEW Weights are.." << endl;
-	cout << "\nFirst layer weights" << endl;
-	printMatrix( W,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
 
-	cout << "\nSecond layer weights" << endl;
-	printMatrix( V, NUM_OUTPUTS, NUM_HIDDEN_NODES );
-      */
-      //--------------------------------------------------------------------------------
-
-
-      /*
-      cout << "FINAL WEIGHTS ARE.." << endl;
+      cout << "NEW Weights are.." << endl;
       cout << "\nFirst layer weights" << endl;
-      printMatrix( W,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
+      printMatrix( V,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
 
       cout << "\nSecond layer weights" << endl;
-      printMatrix( V, NUM_OUTPUTS, NUM_HIDDEN_NODES );
-
+      printMatrix( W, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
+      //--------------------------------------------------------------------------------
       for (int i = 0; i < NUM_PATTERNS; ++i) {
-	    memset( xPrime, 0.0, (DIMENSIONS + 1)* sizeof(double));
-	    augmentInput( x, i, xPrime );
+	    memset( x, 0.0, (DIMENSIONS + 1)* sizeof(double));
+	    augmentInput( X, i, x );
+	    t[0] = T[i];
 	    //--------------------------------------------------------------------------------
 	    //FEEDFORWARD FUNCTIONS!!!!
-	    computeActivations( xPrime, W, a);
+	    memset( a, 0.0,  (NUM_HIDDEN_NODES) * sizeof(double));
+	    memset( z, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
+	    memset( y, 0.0,  NUM_OUTPUTS * sizeof(double));
+	    //cout << "\n\nFORWARD PROPAGATE THROUGH NETWORK " << endl;
+	    //A. compute activations:
+	    computeActivations( x, V, a);
 	    //--------------------------------------------------------------------------------
+	    //B. compute hidden nodes
 	    computeHiddenUnits( a, z);
 	    //--------------------------------------------------------------------------------
-	    computeOutputActivations( z , V, y );
-	    cout << "\n\nFor Input : "<< xPrime[1]<< "\t Target is " << t[i] << "\t Output is  : " << y[0] << endl;
+	    //C. compute output
+	    computeOutputActivations( z , W, y );
+	    cout << "\n\nFor Input : "<< x[1]<< "\t Target is " << t[0] << "\t Output is  : " << y[0] << endl;
 	    //printVector( y, NUM_OUTPUTS );
       }
-      //*/
       //--------------------------------------------------------------------------------
       printf ("\n Deallocating memory \n\n");
       mkl_free( X );
       mkl_free( T );
-
-
-
+      mkl_free( x );
+      mkl_free( t );
       mkl_free( y );
       mkl_free( W );
       mkl_free( V );
       mkl_free( a );
       mkl_free( z );
-      //mkl_free( outputErrors );
-      // mkl_free( inputErrors );
+      mkl_free( outputErrors );
+      mkl_free( inputErrors );
       // mkl_free( gradW );
       //mkl_free( gradV );
       printf (" Example completed. \n\n");
