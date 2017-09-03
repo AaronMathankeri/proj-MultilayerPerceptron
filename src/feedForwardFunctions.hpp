@@ -14,8 +14,8 @@
 #include "helperFunctions.hpp"
 //---------------------------------------------------------------------------------
 //feedforward functions:
-void computeActivations( const double *xPrime, const double *W, double *a);
+void computeActivations( const double *x, const double *V, double *a);
 void computeHiddenUnits( const double *a, double* z);
-void computeOutputActivations( const double *z, const double *V, double *y);
+void computeOutputActivations( const double *z, const double *W, double *y);
 
 #endif /* FEEDFORWARDFUNCTIONS_H */

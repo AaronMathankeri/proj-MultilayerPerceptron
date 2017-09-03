@@ -60,18 +60,18 @@ int main(int argc, char *argv[])
       t = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // single target
       y = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // outputs
 
-      W = (double *)mkl_malloc( NUM_HIDDEN_NODES * (DIMENSIONS+1) *sizeof( double ), 64 ); //1st layer weights
-      V = (double *)mkl_malloc( NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); //2nd layer weights
+      V = (double *)mkl_malloc( NUM_HIDDEN_NODES * (DIMENSIONS+1) *sizeof( double ), 64 ); //1st layer weights
+      W = (double *)mkl_malloc( NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); //2nd layer weights
 
       a = (double *)mkl_malloc( (NUM_HIDDEN_NODES)*sizeof( double ), 64 ); // activations 
       z = (double *)mkl_malloc( (NUM_HIDDEN_NODES + 1)*sizeof( double ), 64 ); // hidden nodes including bias
-      
+      /*
       outputErrors = (double *)mkl_malloc( NUM_OUTPUTS*sizeof( double ), 64 ); // 
       inputErrors = (double *)mkl_malloc( (NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); // including bias
 
       gradW = (double *)mkl_malloc( (DIMENSIONS + 1)*NUM_HIDDEN_NODES*sizeof( double ), 64 ); //1st layer weights
       gradV = (double *)mkl_malloc( NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)*sizeof( double ), 64 ); //2nd layer weights
-      
+      */
       memset( X, 0.0,  NUM_PATTERNS * sizeof(double));
       memset( T, 0.0,  NUM_PATTERNS * sizeof(double));
 
@@ -79,14 +79,15 @@ int main(int argc, char *argv[])
       memset( t, 0.0,  NUM_OUTPUTS * sizeof(double));
       memset( y, 0.0,  NUM_OUTPUTS * sizeof(double));
 
-      memset( W, 0.0,  NUM_HIDDEN_NODES * (DIMENSIONS+1) *sizeof(double));
-      memset( V, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
+      memset( V, 0.0,  NUM_HIDDEN_NODES * (DIMENSIONS+1) *sizeof(double));
+      memset( W, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
 
       memset( a, 0.0,  (NUM_HIDDEN_NODES) * sizeof(double));
       memset( z, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
-
+      /*
       memset( gradW, 0.0,  (DIMENSIONS + 1) * NUM_HIDDEN_NODES* sizeof(double));
       memset( gradV, 0.0,  NUM_OUTPUTS * NUM_HIDDEN_NODES  * sizeof(double));
+      */
       //--------------------------------------------------------------------------------
       //read data
       string inputsFile = "./data/xSquared/inputs.txt";
@@ -103,19 +104,19 @@ int main(int argc, char *argv[])
       //*/
 
       //3. Randomly initialize weights
-      setRandomWeights( W,  NUM_HIDDEN_NODES, (DIMENSIONS+1) );
-      setRandomWeights( V, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
+      setRandomWeights( V,  NUM_HIDDEN_NODES, (DIMENSIONS+1) );
+      setRandomWeights( W, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
+
       cout << "INITIAL WEIGHTS ARE.." << endl;
       cout << "\nFirst layer weights" << endl;
-      printMatrix( W,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
+      printMatrix( V,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
 
       cout << "\nSecond layer weights" << endl;
-      printMatrix( V, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
+      printMatrix( W, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
 
       //--------------------------------------------------------------------------------
       //2. each input pattern must have a x0 clamped at 1.0 for the bias
       // same for the hidden layer
-
       for (int i = 0; i < 1; ++i) {
 	    augmentInput( X, i, x );
 	    t[0] = T[i];
@@ -126,7 +127,6 @@ int main(int argc, char *argv[])
 	    printVector( t , NUM_OUTPUTS);
 
       }
-
       //--------------------------------------------------------------------------------
       //FEEDFORWARD FUNCTIONS!!!!
       cout << "\n\nFEEDFORWARD CALCULATIONS!!!.." << endl;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
       //cout << "\n\nFORWARD PROPAGATE THROUGH NETWORK " << endl;
       //A. compute activations:
       cout << "\nComputing activations" << endl;
-      computeActivations( x, W, a);
+      computeActivations( x, V, a);
       cout << "Activations : " << endl;
       printVector( a, NUM_HIDDEN_NODES );
 
@@ -146,14 +146,14 @@ int main(int argc, char *argv[])
       computeHiddenUnits( a, z);
       cout << "Hidden Nodes : " << endl;
       printVector( z, NUM_HIDDEN_NODES+1 );
-
       //--------------------------------------------------------------------------------
       //C. compute output
       cout << "\nComputing outputs" << endl;
-      computeOutputActivations( z , V, y );
+      computeOutputActivations( z , W, y );
       cout << "Output is  : " << endl;
       printVector( y, NUM_OUTPUTS );
       //--------------------------------------------------------------------------------
+      /*
       // ERROR BACKPROPAGATION
       memset( outputErrors, 0.0,  NUM_OUTPUTS * sizeof(double));
       memset( inputErrors, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
