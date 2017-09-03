@@ -15,5 +15,5 @@
 
 double logisticSigmoid( const double a );
 double dSigmoid( const double a );
-
+double computeLeastSquaresError( const double *t, const double *y );
 #endif /* HELPERFUNCTIONS_H */

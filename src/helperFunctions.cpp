@@ -12,3 +12,13 @@ double dSigmoid( const double a ){
       x = logisticSigmoid(a) * ( 1 - logisticSigmoid (a ) );
       return x;
 }
+
+double computeLeastSquaresError( const double *t, const double *y ){
+      double error = 0.0;
+      for (int i = 0; i < NUM_PATTERNS; ++i) {
+	    error += (y[i] - t[i]) * (y[i] - t[i]);
+      }
+      error *= 0.5;
+      return error;
+}
+
