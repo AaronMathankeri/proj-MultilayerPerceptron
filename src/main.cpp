@@ -7,9 +7,6 @@
  *
  *  NOTE: - x0 & z0 are clamped at 1.0 for the biases!
  *          therefore for 3hidden nodes, there are 4
- *        - for error backprop and feedforward, how
- *          to apply the matrix multiplications
- *          to handle the bias parms?
  */
 #include <iostream>
 #include "mkl.h"
@@ -18,25 +15,9 @@
 #include "initializations.hpp"
 #include "feedForwardFunctions.hpp"
 #include "backPropFunctions.hpp"
+#include "gradientDescent.hpp"
 
 using namespace std;
-
-
-void applyLearningRate( double *x, const int nElements, const double learningRate ){
-      const int incx = 1;
-      double *y = (double *)mkl_malloc( nElements*sizeof( double ), 64 ); // inputs
-      memset( y, 0.0,  nElements * sizeof(double));
-
-      cblas_daxpy( nElements, learningRate, x, incx, y, incx );
-      cblas_dcopy( nElements, y, incx, x, incx );
-      
-      mkl_free( y );
-}
-
-void updateWeights( double *weights, const double *deltaWeights, const int nElements ){
-      vdSub( nElements, weights, deltaWeights, weights);
-}
-
 
 int main(int argc, char *argv[])
 {
@@ -44,7 +25,7 @@ int main(int argc, char *argv[])
 
       //--------------------------------------------------------------------------------
       // declare variables for calculations
-      const double learningRate = 1e-3;
+      const double learningRate = 1e-2;
       const int MAX_ITER = 1e5;
 
       double *X, *T, *Y; // inputs and targets
@@ -99,15 +80,14 @@ int main(int argc, char *argv[])
 
       loadData( X , inputsFile );
       loadData( T , targetsFile );
-      //*
+
       cout << "Inputs" << endl;
       printVector( X, 10 );
 
       cout << "Targets" << endl;
       printVector( T, 10 );
-      //*/
 
-      //3. Randomly initialize weights
+      // Randomly initialize weights
       setRandomWeights( V,  NUM_HIDDEN_NODES, (DIMENSIONS+1) );
       setRandomWeights( W, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
 
@@ -117,104 +97,9 @@ int main(int argc, char *argv[])
 
       cout << "\nSecond layer weights" << endl;
       printMatrix( W, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
-
-      //--------------------------------------------------------------------------------
-      //2. each input pattern must have a x0 clamped at 1.0 for the bias
-      // same for the hidden layer
-      for (int i = 0; i < 1; ++i) {
-	    augmentInput( X, i, x );
-	    t[0] = T[i];
-	    //cout << "x is " << x[0] << "\t" << x[1] << endl;
-	    cout << "\nx is " << "\n";
-	    printVector( x , DIMENSIONS+1);
-	    cout << "t is " << "\n";
-	    printVector( t , NUM_OUTPUTS);
-
-      }
-      //--------------------------------------------------------------------------------
-      //FEEDFORWARD FUNCTIONS!!!!
-      cout << "\n\nFEEDFORWARD CALCULATIONS!!!.." << endl;
-      memset( a, 0.0,  (NUM_HIDDEN_NODES) * sizeof(double));
-      memset( z, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
-      memset( y, 0.0,  NUM_OUTPUTS * sizeof(double));
-      //cout << "\n\nFORWARD PROPAGATE THROUGH NETWORK " << endl;
-      //A. compute activations:
-      cout << "\nComputing activations" << endl;
-      computeActivations( x, V, a);
-      cout << "Activations : " << endl;
-      printVector( a, NUM_HIDDEN_NODES );
-      //--------------------------------------------------------------------------------
-      //B. compute hidden nodes
-      cout << "\nComputing hidden nodes" << endl;
-      computeHiddenUnits( a, z);
-      cout << "Hidden Nodes : " << endl;
-      printVector( z, NUM_HIDDEN_NODES+1 );
-      //--------------------------------------------------------------------------------
-      //C. compute output
-      cout << "\nComputing outputs" << endl;
-      computeOutputActivations( z , W, y );
-      cout << "Output is  : " << endl;
-      printVector( y, NUM_OUTPUTS );
-      //--------------------------------------------------------------------------------
-      // ERROR BACKPROPAGATION
-      memset( outputErrors, 0.0,  (NUM_OUTPUTS) * sizeof(double));
-      memset( inputErrors, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
-
-      cout << "\n\nBACKPROPAGATE THROUGH NETWORK " << endl;
-      //A. computeOutputErrors
-      cout << "\nComputing output errors" << endl;
-      computeOutputErrors( y, t, outputErrors );
-      cout << "Output Errors are  : " << endl;
-      printVector( outputErrors, NUM_OUTPUTS );
-
-      //--------------------------------------------------------------------------------
-      //B. computeInput errors
-      cout << "\nComputing input errors" << endl;
-      computeHiddenErrors( a, W, outputErrors, inputErrors );
-      cout << "Input Errors are  : " << endl;
-      printVector( inputErrors, NUM_HIDDEN_NODES );
-      //--------------------------------------------------------------------------------
-      memset( gradV, 0.0,  NUM_HIDDEN_NODES *(DIMENSIONS+1) * sizeof(double));
-      memset( gradW, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
-
-      computeGradW( outputErrors, z , gradW );
-      computeGradV( inputErrors, x, gradV );
-      cout << "complete." << endl;
-
-      cout << "\n\n GradW  : " << endl;
-      printMatrix( gradW, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
-      cout << "\n\n GradV   : " << endl;
-      printMatrix( gradV, NUM_HIDDEN_NODES , (DIMENSIONS+1) );
-      //--------------------------------------------------------------------------------
-      // STOCHASTIC GRADIENT DESCENT
-      //1. get gradient
-      //2. multiply by learning rate
-      //3. subtract current weights
-      //cout << "\n\nSTOCHASTIC GRADIENT DESCENT " << endl;
-
-      //--------------------------------------------------------------------------------
-      cout << "Updating weights using SGD" << endl;
-      //multiply weights by learningrate
-      applyLearningRate( gradW, (NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)), learningRate );
-      applyLearningRate( gradV, (NUM_HIDDEN_NODES*(DIMENSIONS+1)), learningRate );
-
-      cout << "\n\n GradW   : " << endl;
-      printMatrix( gradW, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
-      cout << "\n\n GradV  : " << endl;
-      printMatrix( gradV, NUM_HIDDEN_NODES, (DIMENSIONS+1) );
-      //--------------------------------------------------------------------------------
-      updateWeights( W, gradW, (NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)) );
-      updateWeights( V, gradV, (NUM_HIDDEN_NODES*(DIMENSIONS+1)));
-      cout << "complete." << endl;
-
-      cout << "NEW Weights are.." << endl;
-      cout << "\nFirst layer weights" << endl;
-      printMatrix( V,  NUM_HIDDEN_NODES, (DIMENSIONS + 1) );
-
-      cout << "\nSecond layer weights" << endl;
-      printMatrix( W, NUM_OUTPUTS, (NUM_HIDDEN_NODES+1) );
-      //--------------------------------------------------------------------------------
       int iter = 0;
+
+      cout << "\n\n TRAINING NETWORK USING SGD..." << endl;
       while (iter < MAX_ITER) {
 	    iter++;
 	    for (int i = 0; i < NUM_PATTERNS; ++i) {
@@ -235,26 +120,24 @@ int main(int argc, char *argv[])
 		  //--------------------------------------------------------------------------------
 		  //C. compute output
 		  computeOutputActivations( z , W, y );
-		  //cout << "\n\nFor Input : "<< x[1]<< "\t Target is " << t[0] << "\t Output is  : " << y[0] << endl;
 		  //--------------------------------------------------------------------------------
 		  // ERROR BACKPROPAGATION
 		  //cout << "\n\nBACKPROPAGATE THROUGH NETWORK " << endl;
 		  memset( outputErrors, 0.0,  (NUM_OUTPUTS) * sizeof(double));
 		  memset( inputErrors, 0.0,  (NUM_HIDDEN_NODES+1) * sizeof(double));
+		  memset( gradV, 0.0,  NUM_HIDDEN_NODES *(DIMENSIONS+1) * sizeof(double));
+		  memset( gradW, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
 		  //A. computeOutputErrors
 		  computeOutputErrors( y, t, outputErrors );
 		  //--------------------------------------------------------------------------------
 		  //B. computeInput errors
 		  computeHiddenErrors( a, W, outputErrors, inputErrors );
 		  //--------------------------------------------------------------------------------
-		  memset( gradV, 0.0,  NUM_HIDDEN_NODES *(DIMENSIONS+1) * sizeof(double));
-		  memset( gradW, 0.0,  NUM_OUTPUTS * (NUM_HIDDEN_NODES+1)  * sizeof(double));
-
+		  //C. find gradient
 		  computeGradW( outputErrors, z , gradW );
 		  computeGradV( inputErrors, x, gradV );
 		  //--------------------------------------------------------------------------------
 		  // STOCHASTIC GRADIENT DESCENT
-		  //cout << "\n\nSTOCHASTIC GRADIENT DESCENT " << endl;
 		  //A. apply gradient
 		  //multiply weights by learningrate
 		  applyLearningRate( gradW, (NUM_OUTPUTS*(NUM_HIDDEN_NODES+1)), learningRate );
@@ -266,7 +149,8 @@ int main(int argc, char *argv[])
 		  //--------------------------------------------------------------------------------
 	    }
       }
-
+      cout << "complete." << endl;
+      
       //--------------------------------------------------------------------------------
       for (int i = 0; i < NUM_PATTERNS; ++i) {
 	    memset( x, 0.0, (DIMENSIONS + 1)* sizeof(double));
@@ -295,6 +179,7 @@ int main(int argc, char *argv[])
       printf ("\n Deallocating memory \n\n");
       mkl_free( X );
       mkl_free( T );
+      mkl_free( Y );
       mkl_free( x );
       mkl_free( t );
       mkl_free( y );
