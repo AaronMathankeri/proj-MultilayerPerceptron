@@ -9,13 +9,11 @@ CONTENTS OF THIS FILE
    
  * Introduction
  * Requirements
- * Recommended modules
  * Installation
  * Configuration
  * Example
  * Troubleshooting
  * FAQ
- * Maintainers
  ---------------------
  INTRODUCTION
 The multilayer perceptron(mlp), or feed forward neural network,
@@ -31,4 +29,42 @@ The goal of the MLP is to learn the x^2 given the dataset.
 This framework is easily extended to different regression problems, and the
 extension to classification requires the output be transformed using a
 logistic sigmoid function.
+ ---------------------
+  REQUIREMENTS
+ * Intel MKL installed locally.
+ * Intel compiler supporting C++11
+ * R >= 3.4.0
+ ---------------------
+ INSTALLATION
+ Project can be cloned and run for a terminal.
+ ---------------------
+ CONFIGURATION
+ Path to MKL must be set in 'Makefile'
+ ---------------------
+ EXAMPLE
+ $ make
+ $ [output]
+  Solving Normal Equations ...
+  w0 = -0.030603
+  w1 = 11.7169
+  w2 = -35.1367
+  w3 = 23.7583
+  Least Squares Error :2.6444
+ ---------------------
+ TROUBLESHOOTING
+ Most errors will be setting the proper path to MKL
+ Dynamically linking libraries will be an issure on OSX.
+ Make sure to properly dynamically link in 'Makefile'
+ ---------------------
+ FAQ
+ (1) What is the benefit of using this framework?
+     For more information: //software.intel.com/en-us/mkl
+ (2) What are the applications of Neural Networks?
+     For more information: PRML by Christopher Bishop
+ (3) Why not use more mainstream frameworks?
+     It's faster. Much faster. This solution can be deployed
+     on large compute clusters enabling rapid large-scale inference.
+     Because of how light weight it is, it can be deployed on
+     gateways and IoT devices where memory and compute architecture may
+     be constrained.
  ---------------------
