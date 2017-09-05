@@ -44,12 +44,10 @@ logistic sigmoid function.
  EXAMPLE
  $ make
  $ [output]
-  Solving Normal Equations ...
-  w0 = -0.030603
-  w1 = 11.7169
-  w2 = -35.1367
-  w3 = 23.7583
-  Least Squares Error :2.6444
+ TRAINING NETWORK USING SGD...
+ complete.
+ For Input : -0.424845	 Target is 0.180493	 Output is  : 0.181313
+ For Input : 0.57661	 Target is 0.332479	 Output is  : 0.336321
  ---------------------
  TROUBLESHOOTING
  Most errors will be setting the proper path to MKL
